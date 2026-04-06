@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Card } from '../common/Card';
 import { Skeleton } from '../common/Skeleton';
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react';

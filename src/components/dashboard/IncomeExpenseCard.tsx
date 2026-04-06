@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Card } from '../common/Card';
 import { Skeleton } from '../common/Skeleton';
 import { useFinanceStore } from '../../store/useFinanceStore';
