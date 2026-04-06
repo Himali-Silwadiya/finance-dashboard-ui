@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  
+  --color-canvas: #0a0a0a;
+  --color-panel: #111111;
+  --color-border: #222222;
+  
+  /* Accent colors */
+  --color-primary: #3b82f6; /* Blue */
+  --color-success: #10b981; /* Emerald */
+  --color-danger: #ef4444; /* Red */
+  
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #64748b;
+}
+
+@layer base {
+  body {
+    @apply bg-canvas text-text-primary font-sans antialiased;
+  }
+}
+
+/* Base custom classes to enforce styles for Stripe/CRED look */
+@layer components {
+  .card-panel {
+    @apply bg-panel border border-border rounded-xl shadow-lg relative overflow-hidden;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400;
+  }
+  
+  .hover-card {
+    @apply transition-all duration-300 ease-out hover:scale-[1.02] hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30;
+  }
+  
+  .glass-effect {
+    @apply bg-panel/60 backdrop-blur-xl border border-white/10;
+  }
+
+  /* Smooth inputs */
+  .input-base {
+    @apply w-full bg-[#1A1A1A] border-border text-text-primary px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-300;
+  }
+}
+
+/* Skeleton animation */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.skeleton {
+  background: #1f1f1f;
+  background-image: linear-gradient(
+    90deg, 
+    #1f1f1f 0px, 
+    #2a2a2a 40px, 
+    #1f1f1f 80px
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}
