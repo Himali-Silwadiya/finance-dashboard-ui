@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react';
-import { DashboardLayout } from '../layouts/DashboardLayout';
+import { PageWrapper } from '../components/layout/PageWrapper';
 import { BalanceCard } from '../components/dashboard/BalanceCard';
 import { IncomeExpenseCard } from '../components/dashboard/IncomeExpenseCard';
-import { TransactionTable } from '../components/dashboard/TransactionTable';
-import { AnalyticsCharts } from '../components/dashboard/AnalyticsCharts';
-import { InsightsPanel } from '../components/dashboard/InsightsPanel';
 import { TransactionModal } from '../components/dashboard/TransactionModal';
 import { useFinanceStore } from '../store/useFinanceStore';
 import type { Transaction } from '../types';
 import { Card } from '../components/common/Card';
 import { Skeleton } from '../components/common/Skeleton';
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight, Plus, Download } from 'lucide-react';
+import { downloadTransactionsCsv } from '../utils/exportCsv';
 
 export const Dashboard = () => {
-  const { fetchData, isLoading, role, addTransaction } = useFinanceStore();
+  const { transactions, fetchData, isLoading, role, addTransaction } = useFinanceStore();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
@@ -21,16 +19,22 @@ export const Dashboard = () => {
   }, [fetchData]);
 
   return (
-    <DashboardLayout>
+    <PageWrapper>
       <div className="flex justify-between items-end mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white mb-1">Welcome back, Alex</h1>
           <p className="text-text-secondary">Here's what's happening with your finances today.</p>
         </div>
         <div className="flex gap-4">
-          <button className="hidden md:flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#1A1A1A] hover:bg-[#252525] text-white font-medium transition-colors border border-border mt-4">
-            Download Report
-          </button>
+          {role === 'admin' && (
+            <button 
+              onClick={() => downloadTransactionsCsv(transactions)}
+              className="hidden md:flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#1A1A1A] hover:bg-[#252525] text-white font-medium transition-colors border border-border mt-4"
+            >
+              <Download className="w-5 h-5" />
+              Download Report
+            </button>
+          )}
           {role === 'admin' && (
             <button 
               onClick={() => setIsAddModalOpen(true)}
@@ -76,21 +80,11 @@ export const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Insights Row */}
-      <InsightsPanel />
-
-      <AnalyticsCharts />
-
-      {/* Main Table Grid */}
-      <div className="grid grid-cols-1 gap-6">
-        <TransactionTable />
-      </div>
-
       <TransactionModal 
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
         onSave={(tx) => addTransaction({ ...tx, id: `tx-${Date.now()}` } as Transaction)} 
       />
-    </DashboardLayout>
+    </PageWrapper>
   );
 };

@@ -6,7 +6,7 @@ export interface Insight {
   type: 'neutral' | 'positive' | 'negative' | 'warning';
   title: string;
   description: string;
-  metrics?: { label: string; value: string }[];
+  metrics?: { label: string; value: string; trend?: 'up' | 'down' | 'neutral' }[];
 }
 
 export const useInsights = () => {
@@ -22,20 +22,23 @@ export const useInsights = () => {
     
     // 1. Highest Spending Category
     const categoryTotals: Record<string, number> = {};
+    let totalExpenseAmount = 0;
     expenses.forEach(t => {
       categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+      totalExpenseAmount += t.amount;
     });
     
     const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
     const topCategory = sortedCategories[0];
     
-    if (topCategory) {
+    if (topCategory && totalExpenseAmount > 0) {
+      const percentage = ((topCategory[1] / totalExpenseAmount) * 100).toFixed(0);
       generatedInsights.push({
         id: 'insight-top-category',
         type: 'warning',
-        title: 'Highest Spending Category',
-        description: `You've spent the most on ${topCategory[0]} recently.`,
-        metrics: [{ label: 'Total Amount', value: `$${topCategory[1].toFixed(2)}` }]
+        title: 'Spending Hotspot',
+        description: `**${topCategory[0]}** is your highest spending category this period, making up **${percentage}%** of your total expenses.`,
+        metrics: [{ label: 'Category Total', value: `$${topCategory[1].toFixed(0)}`, trend: 'up' }]
       });
     }
 
@@ -51,9 +54,9 @@ export const useInsights = () => {
           id: 'insight-anomaly',
           type: 'negative',
           title: 'Unusual Spending Detected',
-          description: `We noticed a larger-than-normal transaction for ${anomalies[0].title}.`,
+          description: `I noticed a very large charge for **${anomalies[0].title}**. This is 3x higher than your usual average.`,
           metrics: [
-            { label: 'Amount', value: `$${anomalies[0].amount.toFixed(2)}` },
+            { label: 'Amount', value: `$${anomalies[0].amount.toFixed(0)}`, trend: 'up' },
             { label: 'Date', value: new Date(anomalies[0].date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }
           ]
         });
@@ -61,8 +64,8 @@ export const useInsights = () => {
          generatedInsights.push({
             id: 'insight-consistent',
             type: 'positive',
-            title: 'Consistent Spending Habits',
-            description: `Your transaction sizes are well within your typical average range. Keep it up!`,
+            title: 'Consistent Habits',
+            description: `Great job! Your spending is highly consistent with no major outlier charges detected this period.`,
          });
       }
     }
@@ -87,16 +90,17 @@ export const useInsights = () => {
     if (lastMonthTotal > 0) {
       const percentageChange = ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
       const isGood = percentageChange <= 0; // Less expenses is good
+      const absChange = Math.abs(percentageChange).toFixed(1);
       
       generatedInsights.push({
         id: 'insight-mom',
-        type: isGood ? 'positive' : 'negative',
-        title: 'Month-over-Month Comparison',
+        type: isGood ? 'positive' : 'warning',
+        title: 'Monthly Trajectory',
         description: isGood 
-          ? `Great job! Your spending is down compared to last month.`
-          : `You spent more this month compared to the last 30 days.`,
+          ? `You spent **${absChange}% less** this month compared to your previous 30 days. Excellent budgeting!`
+          : `You spent **${absChange}% more** this month than your previous 30 days. Let's keep an eye on this.`,
         metrics: [
-          { label: 'Trend', value: `${percentageChange > 0 ? '+' : ''}${percentageChange.toFixed(1)}%` },
+          { label: 'Variance', value: `${isGood ? '-' : '+'}${absChange}%`, trend: isGood ? 'down' : 'up' },
           { label: 'This Month', value: `$${thisMonthTotal.toFixed(0)}` }
         ]
       });

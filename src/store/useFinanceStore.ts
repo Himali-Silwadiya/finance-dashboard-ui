@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Transaction, BalanceState, ChartDataPoint, CategoryDataPoint, ChartTimeRange } from '../types';
 
 interface FinanceStore {
@@ -12,8 +13,11 @@ interface FinanceStore {
   expenseCategories: CategoryDataPoint[];
   
   // Auth State
+  isLoggedIn: boolean;
   role: 'viewer' | 'admin';
   setRole: (role: 'viewer' | 'admin') => void;
+  login: (role: 'viewer' | 'admin') => void;
+  logout: () => void;
 
   fetchData: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
@@ -84,40 +88,58 @@ const generateMockChartData = (range: ChartTimeRange): ChartDataPoint[] => {
   return data;
 }
 
-export const useFinanceStore = create<FinanceStore>((set) => ({
-  balance: {
-    totalBalance: 12450.80,
-    totalIncome: 14500.00,
-    totalExpense: 2049.20,
-    percentageChange: +12.4,
-  },
-  transactions: [],
-  isLoading: true,
-  chartTimeRange: '1M',
-  balanceHistory: generateMockChartData('1M'),
-  expenseCategories: MOCK_EXPENSE_CATEGORIES,
+export const useFinanceStore = create<FinanceStore>()(
+  persist(
+    (set) => ({
+      balance: {
+        totalBalance: 12450.80,
+        totalIncome: 14500.00,
+        totalExpense: 2049.20,
+        percentageChange: +12.4,
+      },
+      transactions: MOCK_TRANSACTIONS,
+      isLoading: true,
+      chartTimeRange: '1M',
+      balanceHistory: generateMockChartData('1M'),
+      expenseCategories: MOCK_EXPENSE_CATEGORIES,
+      
+      fetchData: async () => {
+        // App loaded. Hydration handled synchronously by persist algorithm. Let's run a small fake loading UX delay.
+        set({ isLoading: true });
+        await new Promise(resolve => setTimeout(resolve, 800));
+        set({ isLoading: false });
+      },
   
-  fetchData: async () => {
-    set({ isLoading: true });
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    set({ transactions: MOCK_TRANSACTIONS, isLoading: false });
-  },
-  
-  setChartTimeRange: (range: ChartTimeRange) => {
-    set({ 
-      chartTimeRange: range,
-      balanceHistory: generateMockChartData(range)
-    });
-  },
-  
-  role: 'admin', // Default to admin for demo
-  setRole: (role) => set({ role }),
-  
-  addTransaction: (tx) => set((state) => ({ transactions: [tx, ...state.transactions] })),
-  updateTransaction: (id, updatedTx) => set((state) => ({
-    transactions: state.transactions.map(tx => tx.id === id ? { ...tx, ...updatedTx } : tx)
-  })),
-  deleteTransaction: (id) => set((state) => ({
-    transactions: state.transactions.filter(tx => tx.id !== id)
-  })),
-}));
+      setChartTimeRange: (range: ChartTimeRange) => {
+        set({ 
+          chartTimeRange: range,
+          balanceHistory: generateMockChartData(range)
+        });
+      },
+      
+      role: 'admin', // Deprecated initialization, overwritten by persist
+      isLoggedIn: false,
+      
+      setRole: (role) => set({ role }),
+      
+      login: (role) => set({ isLoggedIn: true, role }),
+      logout: () => set({ isLoggedIn: false, role: 'viewer' }),
+      
+      addTransaction: (tx) => set((state) => ({ transactions: [tx, ...state.transactions] })),
+      updateTransaction: (id, updatedTx) => set((state) => ({
+        transactions: state.transactions.map(tx => tx.id === id ? { ...tx, ...updatedTx } : tx)
+      })),
+      deleteTransaction: (id) => set((state) => ({
+        transactions: state.transactions.filter(tx => tx.id !== id)
+      })),
+    }),
+    {
+      name: 'fin-dash-storage',
+      partialize: (state) => ({
+        transactions: state.transactions,
+        role: state.role,
+        isLoggedIn: state.isLoggedIn,
+      }),
+    }
+  )
+);
